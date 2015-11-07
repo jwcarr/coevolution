@@ -12,6 +12,9 @@ var queued_client_ID = null;
 // Port number should match with client.js
 var port = 9000;
 
+// Path to a directory where results should be saved
+var data_path = '../../server_data/coevolution/';
+
 // ------------------------------------------------------------------
 // Seed drawings
 // ------------------------------------------------------------------
@@ -74,9 +77,9 @@ io.sockets.on('connection', function(client) {
       io.sockets.connected[partner_id].emit('start_experiment', { role:'director', partner_id:client.id, world_key:world_key, array_items:trial[0], target_picture:trial[2] });
       io.sockets.connected[client.id].emit('start_experiment', { role:'matcher', partner_id:partner_id, world_key:world_key, array_items:trial[0], target_picture:trial[2] });
       var log = 'Trial: 1\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + '\n';
-      fs.mkdir('../../server_data/coevolution/' + world_key + '/', function(err) {
+      fs.mkdir(data_path + world_key + '/', function(err) {
         if (err) return console.log(err);
-        fs.writeFile('../../server_data/coevolution/' + world_key + '/1', log, errorCallback);
+        fs.writeFile(data_path + world_key + '/1', log, errorCallback);
       });
     }
   });
@@ -86,7 +89,7 @@ io.sockets.on('connection', function(client) {
   client.on('send_signal', function(payload) {
     io.sockets.connected[payload.to].emit('receive_signal', payload);
     var log = 'Signal: ' + payload.signal + '\n';
-    fs.appendFile('../../server_data/coevolution/' + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
   });
 
 
@@ -95,7 +98,7 @@ io.sockets.on('connection', function(client) {
     io.sockets.connected[payload.to].emit('receive_drawing', payload);
     worlds[payload.world_key].push(payload.drawing);
     var log = 'Matcher selection: ' + payload.matcher_selection + '\nDrawing: ' + payload.drawing.join('; ') + '\n';
-    fs.appendFile('../../server_data/coevolution/' + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
   });
 
 
@@ -110,7 +113,7 @@ io.sockets.on('connection', function(client) {
       worlds[payload.world_key].pop();
       log += 'This drawing was not added to the world';
     }
-    fs.appendFile('../../server_data/coevolution/' + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
   });
 
 
@@ -120,7 +123,7 @@ io.sockets.on('connection', function(client) {
     io.sockets.connected[client.id].emit('start_new_trial', { role:'director', array_items:trial[0], target_picture:trial[2] });
     io.sockets.connected[payload.to].emit('start_new_trial', { role:'matcher', array_items:trial[0], target_picture:trial[2] });
     var log = 'Trial: ' + payload.trial_num + '\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + '\n';
-    fs.appendFile('../../server_data/coevolution/' + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
   });
 
 

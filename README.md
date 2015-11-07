@@ -17,13 +17,13 @@ Install [Node.js](https://nodejs.org) on your server if you don't already have i
 brew install node
 ```
 
-Place the contents of this repo in a publicly accessible part of your server and change into the directory, e.g.
+Place the contents of this repo in a publicly accessible part of your server and change into the directory, e.g.:
 
 ```
 cd public_html/coevolution/
 ```
 
-Install the [express](http://expressjs.com) and [socket.io](http://socket.io) packages at this location using the Node Package Manager (```npm```), e.g.
+Install the [express](http://expressjs.com) and [socket.io](http://socket.io) packages at this location using the Node Package Manager (```npm```):
 
 ```
 npm install express
@@ -31,6 +31,8 @@ npm install socket.io
 ```
 
 This should create a new ```node_modules``` directory containing the directories ```express``` and ```socket.io```.
+
+Modify the ```data_path``` variable in ```server.js``` to provide a path to where you want the results to be stored. Then modify the ```port``` variable in both ```server.js``` and ```client.js``` to some open port number (set to 9000 by default).
 
 Make ```server.js``` executable and not publicly accessible, e.g.:
 

@@ -554,6 +554,7 @@ socket.on('terminate', function() {
 
 // ------------------------------------------------------------------
 // Stripped down adaptation of Sketch.js for the drawing canvas
+// Copyright (C) 2011 by Michael Bleigh and Intridea, Inc (MIT License)
 // http://intridea.github.io/sketch.js/
 // ------------------------------------------------------------------
 

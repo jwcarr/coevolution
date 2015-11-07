@@ -1,0 +1,114 @@
+<!DOCTYPE HTML>
+<head>
+  <meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+  <meta name='apple-mobile-web-app-capable' content='yes' />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+  <link rel="apple-touch-icon" href="images/icon.png" />
+  <link rel='stylesheet' type='text/css' href='layout.css' />
+  <script type='text/javascript' src='http://code.jquery.com/jquery-2.1.4.min.js'></script>
+  <script type='text/javascript' src='https://cdn.socket.io/socket.io-1.3.7.js'></script>
+  <title>CoEvolution</title>
+</head>
+
+<body>
+
+  <div id='status_bar'>
+    <div id='points'>0</div>
+    <div id='timer'></div>
+    <div id='instruction'></div>
+  </div>
+
+  <div id='start_area'>
+    <button class='send' id='start_key'>START</button>
+  </div>
+
+  <div id='context_array'>
+    <div class='canvas_container' id='array_item_container_0' style='display: none;'>
+      <canvas id='array_item_0' class='array_canvas' width='132' height='132'></canvas>
+    </div>
+    <div class='canvas_container' id='array_item_container_1' style='margin-left: 12px; display: none;'>
+      <canvas id='array_item_1' class='array_canvas' width='132' height='132'></canvas>
+    </div>
+    <div class='canvas_container' id='array_item_container_2' style='margin-left: 12px; display: none;'>
+      <canvas id='array_item_2' class='array_canvas' width='132' height='132'></canvas>
+    </div>
+    <div class='canvas_container' id='array_item_container_3' style='margin-left: 12px; display: none;'>
+      <canvas id='array_item_3' class='array_canvas' width='132' height='132'></canvas>
+    </div>
+    <div class='canvas_container' id='array_item_container_4' style='margin-left: 12px; display: none;'>
+      <canvas id='array_item_4' class='array_canvas' width='132' height='132'></canvas>
+    </div>
+  </div>
+
+  <div id='message'>
+    <input type='text' id='label' autocomplete='off' size='25' maxlength='16' disabled />
+  </div>
+
+  <div id='pointer_container'>
+    <img src='images/pointer.png' id='pointer' width='36' height='24' style='visibility: hidden; margin-left: 20px' />
+  </div>
+
+  <div id='drawing_area'>
+    <canvas id='receiving_canvas' width='528' height='528'></canvas>
+    <canvas id='sending_canvas' width='528' height='528'></canvas>
+  </div>
+
+  <div id='keyboard'>
+    <div class='keyboard_row' style='height:100px;'>
+      <button class='send' id='send_key' disabled>SEND</button>
+      <button class='clear' id='clear_key' disabled>CLEAR</button>
+      <button class='delete' id='delete_key' disabled>⬅︎ BACK</button>
+    </div>
+    <div class='keyboard_row'>
+      <button class='key' id='key_q'>Q</button>
+      <button class='key' id='key_w'>W</button>
+      <button class='key' id='key_e'>E</button>
+      <button class='key' id='key_r'>R</button>
+      <button class='key' id='key_t'>T</button>
+      <button class='key' id='key_y'>Y</button>
+      <button class='key' id='key_u'>U</button>
+      <button class='key' id='key_i'>I</button>
+      <button class='key' id='key_o'>O</button>
+      <button class='key' id='key_p'>P</button>
+    </div>
+    <div class='keyboard_row'>
+      <button class='key' id='key_a'>A</button>
+      <button class='key' id='key_s'>S</button>
+      <button class='key' id='key_d'>D</button>
+      <button class='key' id='key_f'>F</button>
+      <button class='key' id='key_g'>G</button>
+      <button class='key' id='key_h'>H</button>
+      <button class='key' id='key_j'>J</button>
+      <button class='key' id='key_k'>K</button>
+      <button class='key' id='key_l'>L</button>
+    </div>
+    <div class='keyboard_row'>
+      <button class='key' id='key_z'>Z</button>
+      <button class='key' id='key_x'>X</button>
+      <button class='key' id='key_c'>C</button>
+      <button class='key' id='key_v'>V</button>
+      <button class='key' id='key_b'>B</button>
+      <button class='key' id='key_n'>N</button>
+      <button class='key' id='key_m'>M</button>
+    </div>
+    <div class='keyboard_row'>
+      <button class='key' id='key_~' style='width: 350px;'><span style='letter-spacing: 2px;'>SPACE</span></button>
+    </div>
+    <div id='max_length_warning'>16 characters max</div>
+  </div>
+
+  <div id='drawing_functions'>
+    <button class='send' id='send_drawing' disabled>SEND</button>
+    <button class='clear' id='clear_drawing' disabled>CLEAR</button>
+  </div>
+
+  <div id='star'></div>
+
+  <div id='time_up' style='display: none;'>Experiment Complete!</div>
+
+  <script type='text/javascript' src='client.js'></script>
+
+</body>
+
+</html>

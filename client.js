@@ -5,6 +5,7 @@
 var experiment_timer = 60; // Time to complete experiment (minutes)
 var max_length = 16; // Maximum signal length (characters)
 var feedback_time = 4; // Length of time to show feedback (seconds)
+var port = 9000; // Port number should match with server.js
 
 // ------------------------------------------------------------------
 // Initialize global variables
@@ -39,7 +40,7 @@ var white = ['#000000', '#FFFFFF'];
 // Establish connection to Node.js server
 // ------------------------------------------------------------------
 
-var socket = io.connect('http://localhost:9000');
+var socket = io.connect('http://' + location.host + ':' + port);
 
 // ------------------------------------------------------------------
 // Set the appropriate tapEvent and prevent page manipulation on iPad

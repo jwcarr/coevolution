@@ -1,4 +1,18 @@
 // ------------------------------------------------------------------
+// Initialize global variables
+// ------------------------------------------------------------------
+
+// Empty associative array for holding the worlds.
+// Takes the form of { 'world_key_1' : [item1, item2, etc...], 'world_key_2': [item1, item2, etc...], etc... }
+var worlds = {};
+
+// Hold the ID of the currently waiting client until they're paired with another client. Then reset back to 'null'.
+var queued_client_ID = null;
+
+// Port number should match with client.js
+var port = 9000;
+
+// ------------------------------------------------------------------
 // Seed drawings
 // ------------------------------------------------------------------
 
@@ -9,17 +23,6 @@ var diamond = [[264,60], [408,264], [264,468], [120,264], [264,60]];
 
 // The seeds for each new session
 var seeds = [circle, triangle, diamond];
-
-// ------------------------------------------------------------------
-// Initialize global variables
-// ------------------------------------------------------------------
-
-// Empty associative array for holding the worlds.
-// Takes the form of { 'world_key_1' : [item1, item2, etc...], 'world_key_2': [item1, item2, etc...], etc... }
-var worlds = {};
-
-// Hold the ID of the currently waiting client until they're paired with another client. Then reset back to 'null'.
-var queued_client_ID = null;
 
 // ------------------------------------------------------------------
 // Initialize the Node.js server
@@ -136,7 +139,7 @@ io.sockets.on('connection', function(client) {
 });
 
 // ------------------------------------------------------------------
-// Listen for messages coming from the clients on port 9000
+// Listen for messages coming from the clients
 // ------------------------------------------------------------------
 
-http.listen(9000);
+http.listen(port);

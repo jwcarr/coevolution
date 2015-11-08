@@ -2,22 +2,11 @@
 // Initialize global variables
 // ------------------------------------------------------------------
 
-// Empty associative array for holding the worlds.
-// Takes the form of { 'world_key_1' : [item1, item2, etc...], 'world_key_2': [item1, item2, etc...], etc... }
-var worlds = {};
-
-// Hold the ID of the currently waiting client until they're paired with another client. Then reset back to 'null'.
-var queued_client_ID = null;
-
 // Port number should match with client.js
 var port = 9000;
 
 // Path to a directory where results should be saved
 var data_path = '../../server_data/coevolution/';
-
-// ------------------------------------------------------------------
-// Seed drawings
-// ------------------------------------------------------------------
 
 // A drawing is an array of x- and y-coordinates.
 var circle = [[464,264], [463,283], [460,303], [455,323], [448,341], [439,359], [429,376], [416,392], [403,407], [388,420], [372,432], [354,442], [336,450], [317,456], [297,461], [278,463], [258,463], [238,462], [218,458], [199,453], [180,445], [163,436], [146,425], [130,413], [116,399], [103,383], [92,367], [83,349], [75,330], [69,311], [66,292], [64,272], [64,252], [66,232], [70,212], [76,193], [84,175], [94,158], [105,141], [118,126], [133,112], [149,100], [165,89], [183,80], [202,73], [221,68], [241,65], [261,64], [281,64], [301,67], [320,72], [339,78], [357,87], [374,97], [390,109], [405,122], [419,137], [430,153], [441,171], [449,189], [456,208], [460,227], [464,264]];
@@ -26,6 +15,13 @@ var diamond = [[264,60], [408,264], [264,468], [120,264], [264,60]];
 
 // The seeds for each new session
 var seeds = [circle, triangle, diamond];
+
+// Empty associative array for holding the worlds.
+// Takes the form of { 'world_key_1' : [item1, item2, etc...], 'world_key_2': [item1, item2, etc...], etc... }
+var worlds = {};
+
+// Hold the ID of the currently waiting client until they're paired with another client. Then reset back to 'null'.
+var queued_client_ID = null;
 
 // ------------------------------------------------------------------
 // Initialize the Node.js server

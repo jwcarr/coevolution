@@ -2,29 +2,10 @@
 // Experiment parameters
 // ------------------------------------------------------------------
 
+var port = 9000; // Port number should match with server.js
 var experiment_timer = 60; // Time to complete experiment (minutes)
 var max_length = 16; // Maximum signal length (characters)
 var feedback_time = 4; // Length of time to show feedback (seconds)
-var port = 9000; // Port number should match with server.js
-
-// ------------------------------------------------------------------
-// Initialize global variables
-// ------------------------------------------------------------------
-
-var world_key = null; // The world key is shared with your partner
-var partner_id = null; // Client ID of your partner
-var current_role = null; // Current role: either director or matcher
-var trial_num = 1; // Current trial number
-var total_points = 0; // Total number of points accumulated
-var canvas_contexts = []; // Stores array context objects
-var target_picture = null; // Index for the target item in the array
-var matcher_mapping = []; // Indices mapping the matcher's context to the director's
-var temp_matcher_selection = false; // Matcher's temporarily selected item
-var matcher_selection = false; // Matcher's final selection
-var director_selection = false; // Director's selection
-var allow_drawing = false; // Allow drawing to the sending canvas
-var time_up = false; // Set to true when time is up to prevent starting a new trial
-var storage = []; // Global array for temporarily storing drawings
 
 // ------------------------------------------------------------------
 // Array item highlight colors (border and fill)
@@ -35,6 +16,25 @@ var yellow = ['#FFB200', '#FFEFCB'];
 var red = ['#FF2F00', '#FFD5CC'];
 var gray = ['#000000', '#EFEFEF'];
 var white = ['#000000', '#FFFFFF'];
+
+// ------------------------------------------------------------------
+// Initialize global variables
+// ------------------------------------------------------------------
+
+var world_key; // The world key is shared with your partner
+var partner_id; // Client ID of your partner
+var current_role; // Current role: either director or matcher
+var target_picture; // Index for the target item in the array
+var matcher_mapping; // Mapping between matcher's and director's context
+var temp_matcher_selection; // Matcher's temporarily selected item
+var matcher_selection = false; // Matcher's final selection
+var director_selection = false; // Director's selection
+var allow_drawing = false; // Allow drawing to the sending canvas
+var trial_num = 1; // Current trial number
+var total_points = 0; // Total number of points accumulated
+var canvas_contexts = []; // Stores array context objects
+var storage = []; // Global array for temporarily storing drawings
+var time_up = false; // Set to true when time is up to prevent new trial
 
 // ------------------------------------------------------------------
 // Establish connection to Node.js server

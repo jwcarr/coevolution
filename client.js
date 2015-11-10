@@ -40,7 +40,7 @@ var time_up = false; // Set to true when time is up to prevent new trial
 // Establish connection to Node.js server
 // ------------------------------------------------------------------
 
-var socket = io.connect('http://' + location.host + ':' + port);
+var socket = io.connect(location.host + ':' + port);
 
 // ------------------------------------------------------------------
 // Set the appropriate tapEvent and prevent page manipulation on iPad

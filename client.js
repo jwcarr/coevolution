@@ -571,25 +571,24 @@ socket.on('terminate', function() {
       this.canvas = $(el);
       this.context = el.getContext('2d');
       this.painting = false;
-      this.tool = 'marker';
       this.actions = [];
-      this.action = [];
+      this.events = [];
       this.canvas.bind('click mousedown mouseup mousemove mouseleave mouseout touchstart touchmove touchend touchcancel', this.onEvent);
     }
     Sketch.prototype.startPainting = function() {
-      if (allow_drawing == true) {
+      if (allow_drawing) {
         this.painting = true;
-        return this.action = { tool: 'marker', events: [] };
+        return this.events = [];
       }
     };
     Sketch.prototype.stopPainting = function() {
-      if (this.action) {
-        this.actions.push(this.action);
+      if (this.events) {
+        this.actions.push(this.events);
+        storage.push('BREAK');
+        enableElements(['#send_drawing', '#clear_drawing']);
       }
       this.painting = false;
-      this.action = null;
-      storage.push('BREAK');
-      enableElements(['#send_drawing', '#clear_drawing']);
+      this.events = null;
       return this.redraw();
     };
     Sketch.prototype.onEvent = function(e) {
@@ -597,7 +596,7 @@ socket.on('terminate', function() {
         e.pageX = e.originalEvent.targetTouches[0].pageX;
         e.pageY = e.originalEvent.targetTouches[0].pageY;
       }
-      $.sketch['marker'].onEvent.call($(this).data('sketch'), e);
+      $.sketch.onEvent.call($(this).data('sketch'), e);
       e.preventDefault();
       return false;
     };
@@ -607,50 +606,44 @@ socket.on('terminate', function() {
       this.context = this.el.getContext('2d');
       sketch = this;
       $.each(this.actions, function() {
-        if (this.tool) {
-          return $.sketch['marker'].draw.call(sketch, this);
-        }
+        return $.sketch.draw.call(sketch, this);
       });
-      if (this.painting && this.action) {
-        return $.sketch['marker'].draw.call(sketch, this.action);
+      if (this.painting && this.events) {
+        return $.sketch.draw.call(sketch, this.events);
       }
     };
     return Sketch;
   })();
   $.sketch = {
-    marker: {
-      onEvent: function(e) {
-        switch (e.type) {
-          case 'mousedown':
-          case 'touchstart':
-            this.startPainting();
-            break;
-          case 'mouseup':
-          case 'mouseout':
-          case 'mouseleave':
-          case 'touchend':
-          case 'touchcancel':
-            this.stopPainting();
-        }
-        if (this.painting) {
-          var x_coordinate = e.pageX - this.canvas.offset().left;
-          var y_coordinate = e.pageY - this.canvas.offset().top;
-          this.action.events.push({ x: x_coordinate, y: y_coordinate, event: e.type });
-          storage.push([parseInt(x_coordinate), parseInt(y_coordinate)]);
-          return this.redraw();
-        }
-      },
-      draw: function(action) {
-        var event, previous, _i, _len, _ref;
+    onEvent: function(e) {
+      switch (e.type) {
+        case 'mousedown':
+        case 'touchstart':
+          this.startPainting();
+          break;
+        case 'mouseup':
+        case 'mouseout':
+        case 'mouseleave':
+        case 'touchend':
+        case 'touchcancel':
+          this.stopPainting();
+      }
+      if (this.painting) {
+        var x_coordinate = e.pageX - this.canvas.offset().left;
+        var y_coordinate = e.pageY - this.canvas.offset().top;
+        this.events.push({ x: x_coordinate, y: y_coordinate });
+        storage.push([parseInt(x_coordinate), parseInt(y_coordinate)]);
+        return this.redraw();
+      }
+    },
+    draw: function(action) {
+      if (action.length > 0) {
         this.context.lineJoin = 'round';
         this.context.lineCap = 'round';
         this.context.beginPath();
-        this.context.moveTo(action.events[0].x, action.events[0].y);
-        _ref = action.events;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          event = _ref[_i];
-          this.context.lineTo(event.x, event.y);
-          previous = event;
+        this.context.moveTo(action[0].x, action[0].y);
+        for (var i=1, n=action.length; i<n; i++) {
+          this.context.lineTo(action[i].x, action[i].y);
         }
         this.context.strokeStyle = '#000000';
         this.context.lineWidth = 5;

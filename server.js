@@ -56,6 +56,18 @@ function randomizeNewTrial(world_key) {
   return [array_items, indices, random_target];
 }
 
+function generateWorldID() {
+  var text = '', characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (var i=0; i<6; i++) {
+    text += characters.charAt(Math.floor(Math.random() * 62));
+  }
+  return text;
+}
+
+function loadPreviousSession(session_id) {
+
+}
+
 // ------------------------------------------------------------------
 // Client event handlers - how to respond to messages from a client
 // ------------------------------------------------------------------
@@ -69,7 +81,7 @@ io.sockets.on('connection', function(client) {
     else {
       var partner_id = queued_client_ID;
       queued_client_ID = null;
-      var world_key = partner_id + client.id;
+      var world_key = generateWorldID();
       worlds[world_key] = seeds.slice();
       var trial = randomizeNewTrial(world_key);
       io.sockets.connected[partner_id].emit('start_experiment', { role:'director', partner_id:client.id, world_key:world_key, array_items:trial[0], target_picture:trial[2] });

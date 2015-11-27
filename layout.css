@@ -237,18 +237,20 @@ button.clear[disabled]{
 }
 
 input#label{
+  width: 650px;
+  height: 80px;
+  margin-top: 5px;
   border-top-width: 0px;
   border-right-width: 0px;
   border-bottom-width: 0px;
   border-left-width: 0px;
-  border: none;
   color: black;
-  font-size: 40px;
+  font-family: 'Courier New';
+  font-size: 65px;
   text-align: center;
   outline: none;
   background-color: transparent;
 }
-
 input#label[disabled]{
   -webkit-text-fill-color: #000000;
   -webkit-opacity: 1;

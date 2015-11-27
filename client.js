@@ -365,7 +365,7 @@ function resetInterface() {
     $('#pointer').css({ 'visibility':'hidden' });
     $('#star').css({ 'visibility':'hidden' });
     enableElements(['.key']);
-    disableElements(['#send_key', '#delete_key', '#clear_key', '#send_drawing', '#clear_drawing']);
+    disableElements(['#send_key', '#delete_key', '#clear_key', '#send_drawing']);
     for (var i=0; i<canvas_contexts.length; i++) {
       highlightArrayItem(i, white, false);
       canvas_contexts[i].clearRect(0, 0, 132, 132);
@@ -465,17 +465,6 @@ $('#send_drawing').on(tapEvent, function() {
     socket.emit('send_drawing', { to:partner_id, world_key:world_key, trial_num:trial_num, drawing:drawing, matcher_selection:matcher_selection });
     $('#pointer').css({ 'visibility':'visible' });
     giveInstruction('Waiting for your partner...', false);
-  }
-});
-
-// Event handler for the clear drawing button. Clear the storage array, wipe the sending canvas, and
-// clear the actions array inside the Sketch.js instance.
-$('#clear_drawing').on(tapEvent, function() {
-  if ($(this).prop('disabled') == false) {
-    storage = [];
-    sending_context.clearRect(0, 0, 528, 528);
-    $('#sending_canvas').sketch('actions', []);
-    disableElements(['#send_drawing', '#clear_drawing']);
   }
 });
 
@@ -585,7 +574,7 @@ socket.on('terminate', function() {
       if (this.events) {
         this.actions.push(this.events);
         storage.push('BREAK');
-        enableElements(['#send_drawing', '#clear_drawing']);
+        enableElements(['#send_drawing']);
       }
       this.painting = false;
       this.events = null;

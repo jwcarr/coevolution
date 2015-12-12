@@ -3,9 +3,9 @@
 // ------------------------------------------------------------------
 
 var port = 9000; // Port number should match with server.js
-var experiment_timer = 60; // Time to complete experiment (minutes)
-var max_length = 16; // Maximum signal length (characters)
+var experiment_time = 7200; // Time to complete the expeirment (seconds)
 var feedback_time = 4; // Length of time to show feedback (seconds)
+var max_length = 16; // Maximum signal length (characters)
 
 // ------------------------------------------------------------------
 // Array item highlight colors (border and fill)
@@ -21,8 +21,9 @@ var white = ['#000000', '#FFFFFF'];
 // Initialize global variables
 // ------------------------------------------------------------------
 
-var world_key; // The world key is shared with your partner
+var session_id; // The session ID is shared with your partner
 var partner_id; // Client ID of your partner
+var start_time; // Time the experiment was started
 var current_role; // Current role: either director or matcher
 var target_picture; // Index for the target item in the array
 var matcher_mapping; // Mapping between matcher's and director's context
@@ -88,19 +89,18 @@ function newCanvases(n_required) {
   }
 }
 
-// Begin the countdown timer; uses setInterval to refresh ever 200 milliseconds
+// Begin the countdown timer; uses setInterval to refresh every 200 milliseconds
 // comparing the current time to the start time
 function beginTimer() {
-  var milliseconds = experiment_timer * 60 * 1000
-  var start = new Date().getTime();
+  var milliseconds = experiment_time * 1000
+  start_time = new Date().getTime();
   var interval = setInterval(function() {
-    var now = (milliseconds - (new Date().getTime() - start)) / 1000;
+    var now = (milliseconds - (new Date().getTime() - start_time)) / 1000;
     if (now <= 0) {
       clearInterval(interval);
       time_up = true;
       $('#timer').html('•••');
-    }
-    else {
+    } else {
       var mins = Math.floor(now / 60);
       var secs = Math.floor(now % 60);
       if (secs < 10) secs = '0' + secs;
@@ -133,8 +133,7 @@ function compressDrawing(drawing) {
     var m = compressed_drawing.length - 1;
     if (drawing[i] instanceof Array) {
       if (drawing[i][0] != compressed_drawing[m][0] || drawing[i][1] != compressed_drawing[m][1]) compressed_drawing.push(drawing[i]); 
-    }
-    else if (drawing[i] != compressed_drawing[m]) compressed_drawing.push(drawing[i]);
+    } else if (drawing[i] != compressed_drawing[m]) compressed_drawing.push(drawing[i]);
   }
   return compressed_drawing.slice(1, -1);
 }
@@ -285,32 +284,29 @@ function displayDirectorDrawing() {
 // N seconds for resetting the interface in preparation for the next trial. Feedback time is set at
 // the top of this script 
 function directorFeedback() {
-  if (target_picture == matcher_selection && matcher_selection == director_selection) {
+  if (target_picture == matcher_selection && matcher_selection == director_selection) { // Outcome 1
     highlightArrayItem(target_picture, blue);
     awardPoints(target_picture, 10);
     giveInstruction('You both picked the correct target picture.', false);
     var outcome = 1;
-  }
-  else if (target_picture != matcher_selection && matcher_selection == director_selection) {
+  } else if (target_picture != matcher_selection && matcher_selection == director_selection) { // Outcome 2
     highlightArrayItem(director_selection, yellow);
     awardPoints(director_selection, 5);
     giveInstruction('You correctly identified the picture that your partner drew.', false);
     var outcome = 2;
-  }
-  else if (target_picture == matcher_selection && matcher_selection != director_selection) {
+  } else if (target_picture == matcher_selection && matcher_selection != director_selection) { // Outcome 3
     highlightArrayItem(matcher_selection, yellow);
     highlightArrayItem(director_selection, gray);
     awardPoints(matcher_selection, 5);
     giveInstruction('Your partner picked the correct target picture.', false);
     var outcome = 3;
-  }
-  else {
+  } else { // Outcome 4
     highlightArrayItem(matcher_selection, red);
     highlightArrayItem(director_selection, gray);
     giveInstruction('You both picked the wrong picture.', false);
     var outcome = 4;
   }
-  socket.emit('send_feedback', { to:partner_id, world_key:world_key, trial_num:trial_num, director_selection:director_selection, outcome:outcome });
+  socket.emit('send_feedback', { to:partner_id, session_id:session_id, trial_num:trial_num, director_selection:director_selection, outcome:outcome });
   setTimeout(function() {
     resetInterface();
   }, feedback_time * 1000);
@@ -321,22 +317,19 @@ function directorFeedback() {
 // next trial. Feedback time is set at the top of this script 
 function matcherFeedback() {
   var mapped_director_selection = matcher_mapping.indexOf(director_selection);
-  if (target_picture == matcher_selection && matcher_selection == director_selection) {
+  if (target_picture == matcher_selection && matcher_selection == director_selection) { // Outcome 1
     highlightArrayItem(mapped_director_selection, blue);
     awardPoints(mapped_director_selection, 10);
     giveInstruction('You both picked the correct target picture.', false);
-  }
-  else if (target_picture != matcher_selection && matcher_selection == director_selection) {
+  } else if (target_picture != matcher_selection && matcher_selection == director_selection) { // Outcome 2
     highlightArrayItem(mapped_director_selection, yellow);
     awardPoints(mapped_director_selection, 5);
     giveInstruction('Your partner correctly identified the picture that you drew.', false);
-  }
-  else if (target_picture == matcher_selection && matcher_selection != director_selection) {
+  } else if (target_picture == matcher_selection && matcher_selection != director_selection) { // Outcome 3
     highlightArrayItem(mapped_director_selection, yellow);
     awardPoints(mapped_director_selection, 5);
     giveInstruction('You picked the correct target picture.', false);
-  }
-  else {
+  } else { // Outcome 4
     highlightArrayItem(mapped_director_selection, red);
     giveInstruction('You both picked the wrong picture.', false);
   }
@@ -355,33 +348,32 @@ function resetInterface() {
     $('#time_up').show();
     $('#timer').html('DONE');
     giveInstruction('', false);
-    socket.emit('terminate', { to:partner_id });
+    if (current_role == 'matcher') socket.emit('terminate', { to:partner_id, session_id:session_id });
   }
   else {
-    trial_num ++;
-    if (current_role == 'matcher') {
-      setTimeout(function() {
-        socket.emit("request_new_trial", { to:partner_id, world_key:world_key, trial_num:trial_num });
-      }, 1000);
-    }
     hideElements(['#receiving_canvas', '#sending_canvas', '#context_array', '#message', '#drawing_functions', '#max_length_warning', '#drawing_area']);
-    $('#pointer').css({ 'visibility':'hidden' });
-    $('#star').css({ 'visibility':'hidden' });
-    enableElements(['.key']);
     disableElements(['#send_key', '#delete_key', '#clear_key', '#send_drawing']);
+    enableElements(['.key']);
+    $('#pointer').css({'visibility':'hidden'});
+    $('#star').css({'visibility':'hidden'});
+    $('#instruction').html('');
+    $('#label').val('');
+    receiving_context.clearRect(0, 0, 528, 528);
     for (var i=0; i<canvas_contexts.length; i++) {
       highlightArrayItem(i, white, false);
       canvas_contexts[i].clearRect(0, 0, 264, 264);
     }
-    receiving_context.clearRect(0, 0, 528, 528);
-    sending_context.clearRect(0, 0, 528, 528);
-    $('#sending_canvas').sketch('actions', []);
     target_picture = null;
     matcher_selection = false;
     director_selection = false;
     storage = [];
-    $('#instruction').html('');
-    $('#label').val('');
+    trial_num ++;
+    if (current_role == 'matcher') {
+      setTimeout(function() {
+        var time_remaining = Math.floor(((experiment_time*1000) - (new Date().getTime() - start_time)) / 1000);
+        socket.emit("request_new_trial", { to:partner_id, session_id:session_id, trial_num:trial_num, time_remaining:time_remaining, points:total_points });
+      }, 500);
+    }
   }
 }
 
@@ -392,14 +384,50 @@ function resetInterface() {
 // On page load, hide page elements and set the timer to N minutes
 $(document).ready(function() {
   hideElements(['#receiving_canvas', '#sending_canvas', '#context_array', '#message', '#keyboard', '#drawing_functions', '#max_length_warning', '#drawing_area']);
-  $('#timer').html(experiment_timer + ':00');
+});
+
+// Event handler for the New Session button. On press, remove the New and Restart session butttons
+// and emit new_session command to the server. Instruct the user to press New Session on the other iPad
+$('#new_session').on(tapEvent, function() {
+  hideElements(['#new_session', '#restart_session']);
+  $('#spinner_message').html('Tap New Session on the other iPad...');
+  showElements(['#spinner']);
+  socket.emit('new_session');
+});
+
+// Event handler for the Restart Session button. On press, remove the New and Restart session butttons
+// and emit restart_session command to the server. This will check on the server side to see if
+// another iPad has already requested a restart. If not, this user will be asked to enter a session ID
+$('#restart_session').on(tapEvent, function() {
+  hideElements(['#new_session', '#restart_session']);
+  socket.emit('restart_session');
+});
+
+// Event handler for the Request Session button. On press, validate the user's input and emit it in a
+// request_session command. The server will respond with request_accepted or request_error
+$('#request_session').on(tapEvent, function() {
+  var session_id = $('#session_id_input').val();
+  if (session_id.length == 6) {
+    $('#session_id_input').blur();
+    hideElements(['#session_id']);
+    socket.emit('request_session', { session_id:session_id });
+  } else {
+    $('#session_id_input').css('background-color', '#FFD5CC');
+    $('#session_id_input').css('border', 'solid 2px #FF2F00');
+    setTimeout(function() {
+      $('#session_id_input').css('background-color', '#FFFFFF');
+      $('#session_id_input').css('border', 'solid 2px #000000');
+    }, 2000);
+  }
 });
 
 // Event handler for the start button. On press, replace the start button with spinner and emit
-// register command to the server
+// new_session command to the server
 $('#start_key').on(tapEvent, function() {
-  $('#start_area').html('<img src="images/loading.gif" width="33" height="33" /><p>Waiting for your partner...</p>');
-  socket.emit('register');
+  hideElements(['#start_key']);
+  $('#spinner_message').html('Waiting for your partner...');
+  showElements(['#spinner']);
+  socket.emit('ready', { partner_id:partner_id, session_id:session_id, trial_num:trial_num, time_remaining:experiment_time, points:total_points });
 });
 
 // Event handler for keyboard key presses. On press, determine which key was pressed and update
@@ -421,14 +449,14 @@ $('button[id^="key_"]').on(tapEvent, function() {
 // Event handler for the send signal button. On press, hide the keyboard, remove trailing spaces,
 // and send the signal to your partner. Then reveal the other items in the context array
 $('#send_key').on(tapEvent, function() {
-  if ($(this).prop('disabled') == false && $('#label').val().length > 0) {
+  if ($(this).prop('disabled') == false && $('#label').val().length > 0 && $('#label').val() != ' ') {
     $('#keyboard').hide();
     var current_label = $('#label').val();
     if (current_label.slice(-1) == ' ') {
       current_label = current_label.slice(0, -1);
       $('#label').val(current_label);
     }
-    socket.emit('send_signal', { to:partner_id, world_key:world_key, trial_num:trial_num, signal:current_label });
+    socket.emit('send_signal', { to:partner_id, session_id:session_id, trial_num:trial_num, signal:current_label });
     giveInstruction('Waiting for your partner...', false);
     for (var i=0; i<canvas_contexts.length; i++) {
       $('#array_item_'+i).css('visibility', 'visible');
@@ -454,7 +482,7 @@ $('#clear_key').on(tapEvent, function() {
   }
 });
 
-// Event handler for the send drawing button. On press, remove the send and clear buttons. Set
+// Event handler for the send drawing button. On press, remove the send drawing button. Set
 // allow_drawing back to false. Use matcher_mapping to reverse the matcher's selection from the
 // randomized context array and store in matcher_selection. Compress the drawing and then send it
 // with the matcher's selection to the director. Make the pointer visible to reveal the correct
@@ -465,7 +493,7 @@ $('#send_drawing').on(tapEvent, function() {
     allow_drawing = false;
     matcher_selection = matcher_mapping[temp_matcher_selection];
     var drawing = compressDrawing(storage);
-    socket.emit('send_drawing', { to:partner_id, world_key:world_key, trial_num:trial_num, drawing:drawing, matcher_selection:matcher_selection });
+    socket.emit('send_drawing', { to:partner_id, session_id:session_id, trial_num:trial_num, drawing:drawing, matcher_selection:matcher_selection });
     $('#pointer').css({ 'visibility':'visible' });
     giveInstruction('Waiting for your partner...', false);
   }
@@ -492,22 +520,51 @@ $('canvas[id^="array_item_"]').on(tapEvent, function() {
 });
 
 // ------------------------------------------------------------------
-// Server event handlers - how to respond to messages from the server
+// Server event handlers
 // ------------------------------------------------------------------
 
-// Server tells you to start the experiment. The server supplies you with your world key, partner's ID,
-// current role, and the target item. Store these to global variables. If your the director call the
-// initializeDirector() function, else call initializeMatcher(), passing the drawings to be placed in the
-// context array. Then start the timer and remove the waiting message
-socket.on('start_experiment', function(payload) {
-  world_key = payload.world_key
+// Server tells you to start a new session. The server supplies you with your session ID and your partner's
+// ID. Store these to global variables. Then set the interface timer according to experiment_time
+socket.on('initialize_new', function(payload) {
+  session_id = payload.session_id
   partner_id = payload.partner_id;
+  hideElements(['#spinner']);
+  showElements(['#start_key']);
+  var mins = Math.floor(experiment_time / 60);
+  var secs = Math.floor(experiment_time % 60);
+  if (secs < 10) secs = '0' + secs;
+  $('#timer').html(mins + ':' + secs);
+  $('*').css('-webkit-user-select', 'none');
+});
+
+// Server tells you to restart a session. The server supplies you with the session ID, your partner's ID,
+// the time remaining, the current trial number, and the current number of points accumulated. Store these
+// to global variables. Then set the timer and points accumulated so far in the interface
+socket.on('initialize_restart', function(payload) {
+  session_id = payload.session_id
+  partner_id = payload.partner_id;
+  experiment_time = payload.time_remaining;
+  trial_num = payload.trial_num;
+  total_points = payload.points;
+  hideElements(['#spinner']);
+  showElements(['#start_key']);
+  var mins = Math.floor(payload.time_remaining / 60);
+  var secs = Math.floor(payload.time_remaining % 60);
+  if (secs < 10) secs = '0' + secs;
+  $('#timer').html(mins + ':' + secs);
+  $('#points').html(total_points);
+  $('*').css('-webkit-user-select', 'none');
+});
+
+// Server tells you to start the experiment. Store your current role and the target item to global variables
+// and then pass the array items to initializeDirector() or initializeMatcher() and begin the timer
+socket.on('start_experiment', function(payload) {
   current_role = payload.role;
   target_picture = payload.target_picture;
+  hideElements(['#spinner']);
   if (current_role == 'director') initializeDirector(payload.array_items);
   else initializeMatcher(payload.array_items);
   beginTimer();
-  $('#start_area').hide();
 });
 
 // Server tells you to start a new trial. Store your current role and the target item to global variables
@@ -543,6 +600,30 @@ socket.on('terminate', function() {
   $('#time_up').show();
   $('#timer').html('DONE');
   giveInstruction('', false);
+});
+
+// Server requests a session ID. Display the sesion ID input box so that it can be entered
+socket.on('request_session_id', function() {
+  showElements(['#session_id']);
+  $('#session_id_input').focus();
+});
+
+// Server informs you that the requested session ID was accepted
+socket.on('request_accepted', function() {
+  $('#spinner_message').html('Tap Restart Session on the other iPad...');
+  showElements(['#spinner']);
+});
+
+// Server informs you that the requested session ID could not be loaded; highlight the session ID input
+// field in red
+socket.on('request_error', function() {
+  showElements(['#session_id']);
+  $('#session_id_input').css('background-color', '#FFD5CC');
+  $('#session_id_input').css('border', 'solid 2px #FF2F00');
+  setTimeout(function() {
+    $('#session_id_input').css('background-color', '#FFFFFF');
+    $('#session_id_input').css('border', 'solid 2px #000000');
+  }, 2000);
 });
 
 // ------------------------------------------------------------------

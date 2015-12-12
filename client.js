@@ -246,6 +246,9 @@ function initializeMatcher(array_items) {
   var pointer_pos = $('#array_item_' + matcher_mapping.indexOf(target_picture)).offset().left + 29;
   $('#pointer').css({ 'margin-left':pointer_pos+'px' });
   giveInstruction('Waiting for your partner...', false);
+  $('#sending_canvas').remove();
+  $('#drawing_area').append('<canvas id="sending_canvas" width="528" height="528"></canvas>');
+  $('#sending_canvas').sketch();
 }
 
 // Display a signal to the matcher and set matcher_selection to null to allow the matcher to make
@@ -641,4 +644,3 @@ socket.on('terminate', function() {
     }
   };
 })(jQuery);
-$('#sending_canvas').sketch();

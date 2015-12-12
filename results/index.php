@@ -2,11 +2,12 @@
 
 date_default_timezone_set('UTC');
 $data_path = '../../../server_data/coevolution/';
+$temp_path = 'downloads/';
 
 if (isset($_REQUEST['download'])) {
   include "zip.php";
   $zip = new recurseZip();
-  $filename = $zip->compress($data_path . $_REQUEST['download'], 'downloads/');
+  $filename = $zip->compress($data_path . $_REQUEST['download'], $temp_path);
   header("Location: $filename");
 }
 

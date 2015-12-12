@@ -22,7 +22,15 @@
   </div>
 
   <div id='start_area'>
-    <button class='send' id='start_key'>START</button>
+    <p><button class='start' id='new_session'>NEW SESSION</button></p>
+    <p><button class='start' id='restart_session'>RESTART SESSION</button></p>
+    <p><button class='start' id='start_key' style='display: none;'>START</button></p>
+    <div id='spinner' style='display: none;'><img src="images/loading.gif" width="33" height="33" /><p id='spinner_message'>Please wait...</p></div>
+    <div id='session_id' style='display: none;'>
+      <p>Previous session ID:</p>
+      <input type='text' id='session_id_input' autocomplete='off' size='10' maxlength='6' />
+      <p><button class='start' id='request_session'>REQUEST SESSION</button></p>
+    </div>
   </div>
 
   <div id='context_array'>

@@ -1,6 +1,5 @@
 *{
   -webkit-touch-callout: none;
-  -webkit-user-select: none;
   -webkit-appearance: none;
 }
 
@@ -204,9 +203,14 @@ button.key{
   width: 70px;
   background-color: black;
 }
-
 button.key[disabled]{
   opacity: 0.1;
+}
+
+button.start{
+  width: 320px;
+  background-color: #03A7FF;
+  letter-spacing: 1px;
 }
 
 button.send{
@@ -254,4 +258,11 @@ input#label{
 input#label[disabled]{
   -webkit-text-fill-color: #000000;
   -webkit-opacity: 1;
+}
+
+input#session_id_input{
+  border: solid black 2px;
+  color: black;
+  font-size: 40px;
+  text-align: center;
 }

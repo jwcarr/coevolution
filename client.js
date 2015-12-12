@@ -223,7 +223,7 @@ function initializeDirector(array_items) {
   for (var i=0; i<n_array_items; i++) {
     if (i == target_picture) $('#array_item_'+i).css('visibility', 'visible');
     else $('#array_item_'+i).css('visibility', 'hidden');
-    drawToCanvas(canvas_contexts[i], array_items[i], 0.25);
+    drawToCanvas(canvas_contexts[i], array_items[i], 0.5);
   }
   showElements(['#context_array', '#keyboard', '#message']);
   var pointer_pos = $('#array_item_'+target_picture).offset().left + 29;
@@ -240,7 +240,7 @@ function initializeMatcher(array_items) {
   matcher_mapping = randomMatcherOrder(n_array_items);
   if (n_array_items > canvas_contexts.length) newCanvases(n_array_items);
   for (var i=0; i<n_array_items; i++) {
-    drawToCanvas(canvas_contexts[i], array_items[matcher_mapping[i]], 0.25);
+    drawToCanvas(canvas_contexts[i], array_items[matcher_mapping[i]], 0.5);
   }
   showElements(['#context_array']);
   var pointer_pos = $('#array_item_' + matcher_mapping.indexOf(target_picture)).offset().left + 29;
@@ -368,7 +368,7 @@ function resetInterface() {
     disableElements(['#send_key', '#delete_key', '#clear_key', '#send_drawing']);
     for (var i=0; i<canvas_contexts.length; i++) {
       highlightArrayItem(i, white, false);
-      canvas_contexts[i].clearRect(0, 0, 132, 132);
+      canvas_contexts[i].clearRect(0, 0, 264, 264);
     }
     receiving_context.clearRect(0, 0, 528, 528);
     sending_context.clearRect(0, 0, 528, 528);

@@ -15,11 +15,16 @@ var swirl = [[282,31], [283,29], [284,29], [285,28], [286,27], [287,26], [288,26
 var seeds = [swirl];
 
 // Empty associative array for holding the worlds.
-// Takes the form of { 'world_key_1' : [item1, item2, etc...], 'world_key_2': [item1, item2, etc...], etc... }
+// Takes the form of { session_id : { drawings:[item1, item2, item3, ...], trial_num:1, points:0, time_remaining:1000, temp_drawing: null }, ... }
 var worlds = {};
 
-// Hold the ID of the currently waiting client until they're paired with another client. Then reset back to 'null'.
-var queued_client_ID = null;
+// Hold the ready status of the clients
+var clients = {};
+
+// Hold the ID of the queued client until they're paired with another client. Then reset back to 'null'.
+// Separate queues for new sessions and restart sessions
+var new_session_queue = null;
+var restart_session_queue = null;
 
 // ------------------------------------------------------------------
 // Initialize the Node.js server
@@ -38,21 +43,22 @@ var io = require('socket.io')(http);
 var errorCallback = function(err) { if (err) return console.log(err) };
 
 // Select a random set of context items and a random target for a given world
-function randomizeNewTrial(world_key) {
-  var total_n = worlds[world_key].length, n_array_items = worlds[world_key].length, indices = [], array_items = [];
+function randomizeNewTrial(session_id) {
+  var total_n = worlds[session_id].drawings.length, n_array_items = worlds[session_id].drawings.length, indices = [], array_items = [];
   if (n_array_items > 5) n_array_items = 5;
   while (indices.length < n_array_items) {
     var num = Math.floor(Math.random() * total_n);
     if (indices.indexOf(num) == -1) indices.push(num);
   }
   for (var i=0; i<n_array_items; i++) {
-    array_items.push(worlds[world_key][indices[i]]);
+    array_items.push(worlds[session_id].drawings[indices[i]]);
   }
   var random_target = Math.floor(Math.random() * n_array_items);
   return [array_items, indices, random_target];
 }
 
-function generateWorldID() {
+// Generate a random 6-character session ID
+function generateSessionID() {
   var text = '', characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   for (var i=0; i<6; i++) {
     text += characters.charAt(Math.floor(Math.random() * 62));
@@ -94,28 +100,70 @@ function loadPreviousSession(session_id) {
 }
 
 // ------------------------------------------------------------------
-// Client event handlers - how to respond to messages from a client
+// Client event handlers
 // ------------------------------------------------------------------
 
 io.sockets.on('connection', function(client) {
 
 
-  // Client asks to register with the server
-  client.on('register', function() {
-    if (queued_client_ID == null) queued_client_ID = client.id;
+  // Client asks to create a new session
+  client.on('new_session', function() {
+    if (new_session_queue == null) new_session_queue = client.id;
     else {
-      var partner_id = queued_client_ID;
-      queued_client_ID = null;
-      var world_key = generateWorldID();
-      worlds[world_key] = seeds.slice();
-      var trial = randomizeNewTrial(world_key);
-      io.sockets.connected[partner_id].emit('start_experiment', { role:'director', partner_id:client.id, world_key:world_key, array_items:trial[0], target_picture:trial[2] });
-      io.sockets.connected[client.id].emit('start_experiment', { role:'matcher', partner_id:partner_id, world_key:world_key, array_items:trial[0], target_picture:trial[2] });
-      var log = 'Trial: 1\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + '\n';
-      fs.mkdir(data_path + world_key + '/', function(err) {
-        if (err) return console.log(err);
-        fs.writeFile(data_path + world_key + '/1', log, errorCallback);
-      });
+      var partner_id = new_session_queue;
+      new_session_queue = null;
+      var session_id = generateSessionID();
+      worlds[session_id] = { drawings:seeds.slice(), trial_num:null, time_remaining:null, points:null, temp_drawing:null };
+      clients[client.id] = false;
+      clients[partner_id] = false;
+      io.sockets.connected[partner_id].emit('initialize_new', { partner_id:client.id, session_id:session_id });
+      io.sockets.connected[client.id].emit('initialize_new', { partner_id:partner_id, session_id:session_id });
+      fs.mkdir(data_path + session_id, errorCallback);
+    }
+  });
+
+
+  // Client makes a request for a previous session
+  client.on('request_session', function(payload) {
+    if (payload.session_id in worlds == false) {
+      previous_session = loadPreviousSession(payload.session_id);
+      if (previous_session == false) {
+        io.sockets.connected[client.id].emit('request_error');
+        return false;
+      }
+      worlds[payload.session_id] = previous_session;
+    }
+    restart_session_queue = { session_id:payload.session_id, client_id:client.id };
+    io.sockets.connected[client.id].emit('request_accepted');
+  });
+
+
+  // Client asks to restart a previous session
+  client.on('restart_session', function() {
+    if (restart_session_queue == null) {
+      io.sockets.connected[client.id].emit('request_session_id');
+    }
+    else {
+      var queued_session_id = restart_session_queue.session_id;
+      var queued_client_id = restart_session_queue.client_id;
+      restart_session_queue = null;
+      clients[client.id] = false;
+      clients[queued_client_id] = false;
+      io.sockets.connected[queued_client_id].emit('initialize_restart', { partner_id:client.id, session_id:queued_session_id, trial_num:worlds[queued_session_id].trial_num, time_remaining:worlds[queued_session_id].time_remaining, points:worlds[queued_session_id].points });
+      io.sockets.connected[client.id].emit('initialize_restart', { partner_id:queued_client_id, session_id:queued_session_id, trial_num:worlds[queued_session_id].trial_num, time_remaining:worlds[queued_session_id].time_remaining, points:worlds[queued_session_id].points });
+    }
+  });
+
+
+  // Client indicates that they are ready to begin
+  client.on('ready', function(payload) {
+    clients[client.id] = true;
+    if (clients[payload.partner_id] == true) {
+      var trial = randomizeNewTrial(payload.session_id);
+      io.sockets.connected[client.id].emit('start_experiment', { role:'director', array_items:trial[0], target_picture:trial[2] });
+      io.sockets.connected[payload.partner_id].emit('start_experiment', { role:'matcher', array_items:trial[0], target_picture:trial[2] });
+      var log = 'Trial: ' + payload.trial_num + '\nTime remaining: ' + payload.time_remaining + '\nTotal points: ' + payload.points + '\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + ' (' + trial[1][trial[2]] + ')\n';
+      fs.writeFile(data_path + payload.session_id + '/' + payload.trial_num, log, errorCallback);
     }
   });
 
@@ -124,16 +172,16 @@ io.sockets.on('connection', function(client) {
   client.on('send_signal', function(payload) {
     io.sockets.connected[payload.to].emit('receive_signal', payload);
     var log = 'Signal: ' + payload.signal + '\n';
-    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.session_id + '/' + payload.trial_num, log, errorCallback);
   });
 
 
   // Client asks you to pass a drawing to another client
   client.on('send_drawing', function(payload) {
     io.sockets.connected[payload.to].emit('receive_drawing', payload);
-    worlds[payload.world_key].push(payload.drawing);
+    worlds[payload.session_id].temp_drawing = payload.drawing;
     var log = 'Matcher selection: ' + payload.matcher_selection + '\nDrawing: ' + payload.drawing.join('; ') + '\n';
-    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.session_id + '/' + payload.trial_num, log, errorCallback);
   });
 
 
@@ -142,35 +190,42 @@ io.sockets.on('connection', function(client) {
     io.sockets.connected[payload.to].emit('receive_feedback', payload);
     var log = 'Director selection: ' + payload.director_selection + '\nOutcome: ' + payload.outcome + '\n';
     if (payload.outcome == 1) {
-      log += 'This drawing was added to the world. Drawing ID: ' + (worlds[payload.world_key].length-1);
+      worlds[payload.session_id].drawings.push(worlds[payload.session_id].temp_drawing);
+      worlds[payload.session_id].temp_drawing = null;
+      log += 'Drawing added to the world: true\nDrawing ID: ' + (worlds[payload.session_id].drawings.length-1);
     }
     else {
-      worlds[payload.world_key].pop();
-      log += 'This drawing was not added to the world';
+      worlds[payload.session_id].temp_drawing = null;
+      log += 'Drawing added to the world: false\nDrawing ID: null';
     }
-    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    fs.appendFile(data_path + payload.session_id + '/' + payload.trial_num, log, errorCallback);
   });
 
 
   // Client asks to begin a new trial
   client.on('request_new_trial', function(payload) {
-    var trial = randomizeNewTrial(payload.world_key);
+    var trial = randomizeNewTrial(payload.session_id);
+    worlds[payload.session_id].trial_num = payload.trial_num;
+    worlds[payload.session_id].time_remaining = payload.time_remaining;
+    worlds[payload.session_id].points = payload.points;
     io.sockets.connected[client.id].emit('start_new_trial', { role:'director', array_items:trial[0], target_picture:trial[2] });
     io.sockets.connected[payload.to].emit('start_new_trial', { role:'matcher', array_items:trial[0], target_picture:trial[2] });
-    var log = 'Trial: ' + payload.trial_num + '\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + '\n';
-    fs.appendFile(data_path + payload.world_key + '/' + payload.trial_num, log, errorCallback);
+    var log = 'Trial: ' + payload.trial_num + '\nTime remaining: ' + payload.time_remaining + '\nTotal points: ' + payload.points + '\nContext IDs: ' + trial[1] + '\nTarget item: ' + trial[2] + ' (' + trial[1][trial[2]] + ')\n';
+    fs.writeFile(data_path + payload.session_id + '/' + payload.trial_num, log, errorCallback);
   });
 
 
   // Client asks you to terminate the experiment
   client.on('terminate', function(payload) {
     io.sockets.connected[payload.to].emit('terminate');
+    if (payload.session_id in worlds == true) delete worlds[payload.session_id];
   });
 
 
   // Client disconnects from the server
   client.on('disconnect', function() {
-    if (queued_client_ID == client.id) queued_client_ID = null;
+    if (new_session_queue != null && new_session_queue == client.id) new_session_queue = null;
+    if (restart_session_queue != null && restart_session_queue[1] == client.id) restart_session_queue = null;
   });
 
 

@@ -60,8 +60,37 @@ function generateWorldID() {
   return text;
 }
 
+// Parse and load in an old session from the raw data files
 function loadPreviousSession(session_id) {
-
+  var last_trial = 0;
+  var session_path = data_path + session_id + '/';
+  try {
+    var files = fs.readdirSync(session_path);
+    for (var i=0; i<files.length; i++) {
+      if (parseInt(files[i]) > last_trial) last_trial = parseInt(files[i]);
+    }
+    if (last_trial == 0) return false;
+    var world = { drawings:seeds.slice(), trial_num:0, time_remaining:7200, points:0, temp_drawing:null };
+    for (var i=1; i<=last_trial; i++) {
+      var trial_data = fs.readFileSync(session_path + i, 'utf8').toString('utf8').split('\n');
+      world.trial_num = i;
+      world.time_remaining = parseInt(trial_data[1].split(': ')[1]);
+      world.points = parseInt(trial_data[2].split(': ')[1]);
+      if (trial_data.length == 12 && trial_data[10] == 'Drawing added to the world: true') {
+        var raw_drawing = trial_data[7].split('; '), drawing = [];
+        for (var j=0; j<raw_drawing.length; j++) {
+          if (raw_drawing[j] == 'BREAK') drawing.push('BREAK');
+          else drawing.push(raw_drawing[j].split(','));
+        }
+        world.drawings.push(drawing);
+      }
+    }
+    return world;
+  }
+  catch (e) {
+    console.log(e);
+    return false;
+  }
 }
 
 // ------------------------------------------------------------------
